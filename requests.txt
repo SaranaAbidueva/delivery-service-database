@@ -1,0 +1,83 @@
+SELECT * FROM orders;
+SELECT * FROM sender;
+SELECT * FROM recipient;
+SELECT * FROM courier;
+SELECT * FROM pickup_points;
+SELECT * FROM transport;
+
+SELECT recipient, date_order FROM orders
+WHERE status=’expected’
+ORDER BY date_order;
+
+SELECT address, start_time, end_time FROM pickup_points 
+WHERE city=’Moscow’ AND (start_time<’09:00:00’ OR end_time >=’19:00:00’)
+ORDER BY start_time;
+
+SELECT SUM(delivery_price) FROM ORDERS
+WHERE date_order>=’01-11-2020’ AND date_order<=’05-11-2020’ AND status!=’cancelled’;
+
+
+SELECT ord.courier, rec.name, rec.patronymic, rec.telephone, rec.address
+FROM recipient AS rec
+INNER JOIN orders AS ord
+ON rec.id = ord.recipient
+WHERE ord.status='expected'
+ORDER BY rec.id;
+
+SELECT cour.full_name, cour.telephone, ord.status
+FROM courier AS cour
+INNER JOIN orders AS ord
+ON cour.id=ord.courier
+WHERE ord.date_delivery=’07-11-2020’
+ORDER BY ord.status;
+
+SELECT r.surname, r.name, r.patronymic, pp.address
+FROM recipient AS r
+INNER JOIN (
+	SELECT pickup_point, sender FROM orders 
+	WHERE courier is NULL
+) AS ord
+ON ord.sender=r.id
+INNER JOIN(
+	SELECT id, address FROM pickup_points 
+) AS pp
+ON ord.pickup_point=pp.id
+WHERE r.city=’Saint-Petersburg’
+ORDER BY r.surname;
+
+
+SELECT t1.surname, t1.name, t1.patronymic, t2.surname, t2.name, t2.patronymic, t2.date_delivery
+FROM (
+	SELECT s.surname, s.name, s.patronymic, ord.id
+	FROM sender AS s
+	INNER JOIN orders AS ord
+	ON ord.sender=s.id
+) AS t1
+INNER JOIN(
+	SELECT r.surname, r.name, r.patronymic, ord.id, ord.date_delivery
+	FROM recipient AS r
+	INNER JOIN orders AS ord
+	ON ord.recipient=r.id
+) AS t2
+ON t1.id=t2.id
+ORDER BY t1.surname;
+
+SELECT t.full_name, t.address AS pickup_point, t.start_time, t.end_time, t.addr AS rec_address, t.telephone AS rec_telephone, t.name AS recipient
+FROM (
+	SELECT ord.courier, co.full_name, ord.pickup_point, ord.recipient, pp.id, pp.address, pp.start_time, pp.end_time, 
+	rec.id, rec.addr, rec.telephone, rec.name
+	FROM orders AS ord
+	INNER JOIN courier AS co
+	ON ord.courier=co.id
+	INNER JOIN( 
+			SELECT id, address, start_time, end_time 
+			FROM pickup_points
+		) AS pp
+	ON pp.id=ord.pickup_point
+	INNER JOIN (
+			SELECT id, address AS addr, telephone, name
+			FROM recipient 
+		) AS rec
+	ON ord.recipient=rec.id
+) AS t
+ORDER BY full_name;
